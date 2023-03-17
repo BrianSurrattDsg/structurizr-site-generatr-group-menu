@@ -1,10 +1,12 @@
 package nl.avisi.structurizr.site.generatr.site.model
 
 import assertk.assertThat
+import assertk.assertions.containsAll
 import assertk.assertions.containsExactly
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isTrue
+import assertk.assertions.size
 import com.structurizr.documentation.Decision
 import com.structurizr.documentation.Format
 import com.structurizr.model.Location
@@ -134,6 +136,58 @@ class MenuViewModelTest : ViewModelTest() {
                 assertThat(it.softwareSystemItems).hasSize(1)
                 assertThat(it.softwareSystemItems[0].title).isEqualTo("System 1")
             }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = ["main", "branch-2"])
+    fun `show menu entries groups of software systems`(currentBranch: String) {
+
+
+        val generatorContext = generatorContext(branches = listOf("main", "branch-2"), currentBranch = currentBranch)
+        val system1 = generatorContext.workspace.model.addSoftwareSystem(Location.Internal, "system 1", "")
+        val system2 = generatorContext.workspace.model.addSoftwareSystem(Location.Internal, "System 2", "")
+        val system3 = generatorContext.workspace.model.addSoftwareSystem(Location.Internal, "system 3", "")
+        val system4 = generatorContext.workspace.model.addSoftwareSystem(Location.Internal, "system 4", "")
+        val system5 = generatorContext.workspace.model.addSoftwareSystem(Location.Internal, "system 5", "")
+        generatorContext.workspace.model.addSoftwareSystem(Location.External, "External", "")
+        val pageViewModel = createPageViewModel(generatorContext)
+
+        // add group paths to each system
+        system1.group = "root;dept1;subdept1.1"
+        system2.group = "root;dept1;subdept1.2"
+        // system 3 has no group
+        system4.group = "root;dept2;subdept2.1"
+        system5.group = "root;dept3;subdept3.1"
+
+        // root
+        // dept1
+        // dept2
+        // dept3
+        // subdept1.1
+//        subdept1.2
+//        subdept2.1"
+//        subdept3.1
+
+        val viewModel = MenuViewModel(generatorContext, pageViewModel)
+
+
+        val groupMenuItems = viewModel.groupItems
+
+        assertThat(groupMenuItems).size().isEqualTo(8)
+        val names = groupMenuItems.map { it.title }
+        println(names)
+        assertThat(names).containsAll(
+            "root",
+            "dept1",
+            "dept2",
+            "dept3",
+            "subdept1.1",
+            "subdept1.2",
+            "subdept2.1",
+            "subdept3.1"
+        )
+
+
     }
 
     private fun createPageViewModel(generatorContext: GeneratorContext, url: String = "/master/page"): PageViewModel {

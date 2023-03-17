@@ -4,6 +4,7 @@ import nl.avisi.structurizr.site.generatr.includedSoftwareSystems
 import nl.avisi.structurizr.site.generatr.site.GeneratorContext
 
 class MenuViewModel(generatorContext: GeneratorContext, private val pageViewModel: PageViewModel) {
+
     val generalItems = sequence {
         yield(createMenuItem("Home", HomePageViewModel.url()))
 
@@ -19,10 +20,24 @@ class MenuViewModel(generatorContext: GeneratorContext, private val pageViewMode
             .forEach { yield(createMenuItem(it.contentTitle(), WorkspaceDocumentationSectionPageViewModel.url(it))) }
     }.toList()
 
-    val softwareSystemItems = generatorContext.workspace.model.includedSoftwareSystems
+    val softwareSystemItems: List<LinkViewModel> = generatorContext.workspace.model.includedSoftwareSystems
         .sortedBy { it.name.lowercase() }
-        .map {
-            createMenuItem(it.name, SoftwareSystemPageViewModel.url(it, SoftwareSystemPageViewModel.Tab.HOME), false)
+        .map { softwareSystem ->
+            createMenuItem(
+                softwareSystem.name,
+                SoftwareSystemPageViewModel.url(softwareSystem, SoftwareSystemPageViewModel.Tab.HOME),
+                false
+            )
+        }
+
+    val groupItems = generatorContext.workspace.model.includedSoftwareSystems
+        .filter { softwareSystem -> !softwareSystem.group.isNullOrEmpty() } // gets rid of any software system w/o a group
+        .map { softwareSystem -> softwareSystem.group } // converts list of groups to list of
+        .flatMap { groupPath ->
+            groupPath.split(";") }
+        .distinct()
+        .map { groupName ->
+            createMenuItem(groupName,"http://$groupName",false            )
         }
 
     private fun createMenuItem(title: String, href: String, exact: Boolean = true) =
